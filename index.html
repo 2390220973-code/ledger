@@ -1,1 +1,940 @@
-ok
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>记账本 Pro（离线版）</title>
+  <style>
+    :root{
+      --bg:#f6f7fb; --card:#ffffff; --text:#111827; --muted:#6b7280; --line:#e5e7eb;
+      --btn:#111827; --btn2:#2563eb; --danger:#dc2626; --ok:#16a34a;
+      --shadow:0 10px 25px rgba(17,24,39,.08); --radius:16px;
+    }
+    [data-theme="dark"]{
+      --bg:#0b1220; --card:#0f172a; --text:#e5e7eb; --muted:#94a3b8; --line:#1f2a44;
+      --btn:#e5e7eb; --btn2:#60a5fa; --danger:#f87171; --ok:#34d399;
+      --shadow:0 10px 25px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; padding:18px; background:var(--bg); color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, "PingFang SC","Microsoft YaHei", Arial;
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    }
+    .wrap{max-width:1100px;margin:0 auto;display:grid;gap:14px}
+    h1{margin:0 0 6px;font-size:20px;letter-spacing:.2px;display:flex;align-items:center;gap:10px}
+    .badge{font-size:12px;padding:4px 10px;border:1px solid var(--line);border-radius:999px;color:var(--muted);background:rgba(255,255,255,.4)}
+    [data-theme="dark"] .badge{background:rgba(255,255,255,.03)}
+    .grid{display:grid;gap:14px}
+    @media (min-width:920px){.grid{grid-template-columns: 420px 1fr;}}
+    .card{
+      background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+      box-shadow:var(--shadow); padding:14px;
+    }
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    label{font-size:12px;color:var(--muted);display:block;margin:10px 0 6px}
+    input, select, textarea{
+      width:100%; padding:12px 12px; border-radius:12px; border:1px solid var(--line);
+      background:transparent; color:var(--text); outline:none;
+    }
+    textarea{min-height:44px; resize:vertical}
+    input::placeholder, textarea::placeholder{color:var(--muted)}
+    .btn{
+      display:inline-flex;align-items:center;justify-content:center;gap:8px;
+      padding:12px 14px;border-radius:14px;border:1px solid var(--line);
+      background:transparent;color:var(--text);cursor:pointer;user-select:none;
+      font-weight:650;
+    }
+    .btn.primary{background:var(--btn2);border-color:transparent;color:white}
+    .btn.dark{background:var(--btn);border-color:transparent;color:var(--bg)}
+    .btn.danger{background:var(--danger);border-color:transparent;color:white}
+    .btn.ok{background:var(--ok);border-color:transparent;color:white}
+    .btn:active{transform:translateY(1px)}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap}
+    .kpis{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    .kpi{border:1px solid var(--line);border-radius:14px;padding:10px;background:rgba(255,255,255,.4)}
+    [data-theme="dark"] .kpi{background:rgba(255,255,255,.03)}
+    .kpi .t{font-size:12px;color:var(--muted)}
+    .kpi .v{font-size:18px;font-weight:800;margin-top:3px}
+    .pillbar{display:flex;gap:8px;flex-wrap:wrap}
+    .pill{
+      font-size:12px;padding:8px 10px;border-radius:999px;border:1px solid var(--line);
+      cursor:pointer;user-select:none;background:rgba(255,255,255,.4)
+    }
+    [data-theme="dark"] .pill{background:rgba(255,255,255,.03)}
+    .pill:hover{filter:brightness(1.02)}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px 8px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:top}
+    th{color:var(--muted);font-weight:700;text-align:left}
+    .muted{color:var(--muted)}
+    .right{text-align:right}
+    .typeTag{
+      font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid var(--line);display:inline-block
+    }
+    .in{color:var(--ok)}
+    .out{color:var(--danger)}
+    .mini{font-size:12px;color:var(--muted)}
+    .split{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+    .hr{height:1px;background:var(--line);margin:10px 0}
+    .dangerZone{border:1px dashed var(--danger);border-radius:14px;padding:12px}
+    .hint{font-size:12px;color:var(--muted);line-height:1.5}
+    .toast{
+      position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+      background:rgba(17,24,39,.92);color:white;padding:10px 14px;border-radius:999px;
+      font-size:13px;opacity:0;pointer-events:none;transition:.2s;
+    }
+    [data-theme="dark"] .toast{background:rgba(229,231,235,.12)}
+    .toast.show{opacity:1}
+    .link{color:var(--btn2);cursor:pointer;text-decoration:underline}
+    .smallbtn{padding:8px 10px;border-radius:12px;font-size:13px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="split">
+      <h1>📒 记账本 Pro <span class="badge">离线 · 本地保存 · 可导出</span></h1>
+      <div class="toolbar">
+        <button class="btn smallbtn" id="themeBtn">🌓 主题</button>
+        <button class="btn smallbtn" id="installBtn" style="display:none">➕ 添加到主屏幕</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT -->
+      <div class="card">
+        <div class="kpis">
+          <div class="kpi">
+            <div class="t">本月收入</div>
+            <div class="v in" id="kpiIn">0</div>
+          </div>
+          <div class="kpi">
+            <div class="t">本月支出</div>
+            <div class="v out" id="kpiOut">0</div>
+          </div>
+          <div class="kpi">
+            <div class="t">本月结余</div>
+            <div class="v" id="kpiNet">0</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>日期</label>
+            <input type="date" id="date" />
+          </div>
+          <div>
+            <label>类型</label>
+            <select id="type">
+              <option value="out">支出</option>
+              <option value="in">收入</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>金额</label>
+            <input id="amount" inputmode="decimal" placeholder="例如：28.5" />
+          </div>
+          <div>
+            <label>分类</label>
+            <select id="category"></select>
+          </div>
+        </div>
+
+        <label>备注</label>
+        <input id="note" placeholder="可不填，例如：奶茶 / 书费 / 打车" />
+
+        <div class="hr"></div>
+
+        <div class="split">
+          <div class="mini">快捷按钮（点一下就填备注 / 可选自动切分类）</div>
+          <button class="btn smallbtn" id="toggleDeleteBtn">🗑️ 删除模式：关闭</button>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>新增快捷：备注文案</label>
+            <input id="quickText" placeholder="例如：奶茶 / 打车 / 快递" />
+          </div>
+          <div>
+            <label>可选：自动分类</label>
+            <select id="quickCat"></select>
+          </div>
+        </div>
+        <div class="toolbar">
+          <button class="btn" id="addQuickBtn">➕ 添加</button>
+          <button class="btn" id="resetQuickBtn">♻️ 重置快捷</button>
+        </div>
+
+        <label>快捷区</label>
+        <div class="pillbar" id="quickBar"></div>
+
+        <div class="hr"></div>
+
+        <div class="split">
+          <div>
+            <div class="mini">常用备注词（自动识别：你记得越多越准）</div>
+            <div class="hint">点一下插入/追加；右边可一键重置词库。</div>
+          </div>
+          <button class="btn" id="resetLexBtn">🧹 重置词库</button>
+        </div>
+        <div class="pillbar" id="lexBar"></div>
+
+        <div class="hr"></div>
+
+        <div class="toolbar">
+          <button class="btn primary" id="addBtn">✅ 记一笔</button>
+          <button class="btn" id="clearInputBtn">清空输入</button>
+        </div>
+
+        <div class="hr"></div>
+
+        <label>筛选月份</label>
+        <select id="monthFilter"></select>
+
+        <div class="row">
+          <div>
+            <label>筛选类型</label>
+            <select id="typeFilter">
+              <option value="all">全部</option>
+              <option value="out">支出</option>
+              <option value="in">收入</option>
+            </select>
+          </div>
+          <div>
+            <label>筛选分类</label>
+            <select id="catFilter"></select>
+          </div>
+        </div>
+
+        <label>关键词（备注里搜）</label>
+        <input id="kw" placeholder="比如：当当 / 快递 / 奶茶" />
+
+        <div class="toolbar">
+          <button class="btn" id="clearFilterBtn">清空筛选</button>
+          <button class="btn ok" id="exportCsvBtn">导出 CSV</button>
+          <button class="btn" id="backupJsonBtn">备份 JSON</button>
+        </div>
+
+        <label>导入 JSON（恢复/迁移）</label>
+        <input type="file" id="importFile" accept="application/json" />
+
+        <div class="hr"></div>
+
+        <div class="dangerZone">
+          <div class="split">
+            <div>
+              <div style="font-weight:800">危险操作</div>
+              <div class="hint">清空所有数据不可恢复，除非你有 JSON 备份。</div>
+            </div>
+            <button class="btn danger" id="wipeBtn">清空所有数据</button>
+          </div>
+        </div>
+
+        <div class="hint" style="margin-top:10px">
+          ✅ 数据保存在本机浏览器（localStorage）。<br/>
+          ✅ 想像 App 一样用：Safari 打开后 → 分享 → “添加到主屏幕”。<br/>
+          ✅ 如果你用多个设备：每台设备数据互不影响，需要导入/导出同步。
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="card">
+        <div class="split">
+          <div>
+            <div style="font-size:14px;font-weight:900">记录列表</div>
+            <div class="mini"><span id="countText">0</span> 条 · <span class="muted">长按/右键快捷按钮可删除（桌面），手机用“删除模式”。</span></div>
+          </div>
+          <div class="mini"><span class="link" id="scrollTop">回到顶部</span></div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div style="overflow:auto">
+          <table>
+            <thead>
+              <tr>
+                <th style="min-width:110px">日期</th>
+                <th style="min-width:76px">类型</th>
+                <th style="min-width:92px">分类</th>
+                <th class="right" style="min-width:92px">金额</th>
+                <th>备注</th>
+                <th style="min-width:88px">操作</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+  </div>
+
+<script>
+(() => {
+  // ---------- Storage ----------
+  const LS_KEY = "ledger_pro_v1";
+  const LS_CFG = "ledger_pro_cfg_v1";
+
+  const now = new Date();
+  const pad = n => String(n).padStart(2,"0");
+  const todayISO = () => `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  const ym = (d) => d.slice(0,7);
+
+  // ---------- Defaults ----------
+  const defaultCats = [
+    "餐饮","交通","日用","购物","房租/水电","娱乐","医疗","学习","人情","宠物","旅行","其他"
+  ];
+  const defaultQuick = [
+    {text:"奶茶", cat:"餐饮"},
+    {text:"打车", cat:"交通"},
+    {text:"外卖", cat:"餐饮"},
+    {text:"快递", cat:"日用"},
+    {text:"买书", cat:"学习"},
+    {text:"电影", cat:"娱乐"},
+  ];
+  const defaultLexSeed = ["奶茶","打车","外卖","快递","咖啡","早餐","午餐","晚餐","买书","话费","地铁","公交"];
+
+  // ---------- DOM ----------
+  const $ = s => document.querySelector(s);
+  const dateEl = $("#date");
+  const typeEl = $("#type");
+  const amountEl = $("#amount");
+  const noteEl = $("#note");
+  const catEl = $("#category");
+  const monthFilterEl = $("#monthFilter");
+  const typeFilterEl = $("#typeFilter");
+  const catFilterEl = $("#catFilter");
+  const kwEl = $("#kw");
+  const tbody = $("#tbody");
+
+  const kpiIn = $("#kpiIn");
+  const kpiOut = $("#kpiOut");
+  const kpiNet = $("#kpiNet");
+  const countText = $("#countText");
+
+  const quickBar = $("#quickBar");
+  const lexBar = $("#lexBar");
+  const quickTextEl = $("#quickText");
+  const quickCatEl = $("#quickCat");
+  const addQuickBtn = $("#addQuickBtn");
+  const resetQuickBtn = $("#resetQuickBtn");
+  const resetLexBtn = $("#resetLexBtn");
+  const addBtn = $("#addBtn");
+  const clearInputBtn = $("#clearInputBtn");
+  const clearFilterBtn = $("#clearFilterBtn");
+  const exportCsvBtn = $("#exportCsvBtn");
+  const backupJsonBtn = $("#backupJsonBtn");
+  const importFile = $("#importFile");
+  const wipeBtn = $("#wipeBtn");
+  const toggleDeleteBtn = $("#toggleDeleteBtn");
+  const themeBtn = $("#themeBtn");
+  const installBtn = $("#installBtn");
+  const toast = $("#toast");
+  const scrollTop = $("#scrollTop");
+
+  // ---------- Toast ----------
+  let toastTimer = null;
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>toast.classList.remove("show"), 1200);
+  }
+
+  // ---------- Config ----------
+  function loadCfg(){
+    try{
+      return JSON.parse(localStorage.getItem(LS_CFG) || "{}");
+    }catch(e){ return {}; }
+  }
+  function saveCfg(cfg){
+    localStorage.setItem(LS_CFG, JSON.stringify(cfg));
+  }
+
+  let cfg = loadCfg();
+  if(!cfg.cats) cfg.cats = defaultCats.slice();
+  if(!cfg.quick) cfg.quick = defaultQuick.slice();
+  if(!cfg.lex) cfg.lex = {}; // word -> count
+  if(!cfg.theme) cfg.theme = "auto";
+  if(typeof cfg.deleteMode !== "boolean") cfg.deleteMode = false;
+
+  // Seed lexicon if empty
+  if(Object.keys(cfg.lex).length === 0){
+    defaultLexSeed.forEach(w => cfg.lex[w] = (cfg.lex[w]||0)+1);
+  }
+
+  // ---------- Data ----------
+  function loadData(){
+    try{
+      const raw = localStorage.getItem(LS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+  function saveData(list){
+    localStorage.setItem(LS_KEY, JSON.stringify(list));
+  }
+  let data = loadData(); // [{id, date, type, cat, amount, note, ts}]
+
+  // ---------- Theme ----------
+  function applyTheme(){
+    const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    let theme = cfg.theme;
+    if(theme === "auto") theme = prefersDark ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", theme === "dark" ? "dark" : "light");
+    showToast(theme === "dark" ? "已切换：暗色" : "已切换：亮色");
+  }
+  function cycleTheme(){
+    cfg.theme = cfg.theme === "auto" ? "dark" : (cfg.theme === "dark" ? "light" : "auto");
+    saveCfg(cfg);
+    const map = {auto:"自动",dark:"暗色",light:"亮色"};
+    showToast(`主题：${map[cfg.theme]}`);
+    applyTheme();
+  }
+
+  // ---------- Select options ----------
+  function fillCats(){
+    const fill = (sel, includeAll=false) => {
+      sel.innerHTML = "";
+      if(includeAll){
+        const o = document.createElement("option");
+        o.value = "all"; o.textContent = "全部";
+        sel.appendChild(o);
+      }
+      cfg.cats.forEach(c=>{
+        const o = document.createElement("option");
+        o.value = c; o.textContent = c;
+        sel.appendChild(o);
+      });
+    };
+    fill(catEl,false);
+    fill(quickCatEl,true);
+    fill(catFilterEl,true);
+
+    // default select
+    if(!catEl.value) catEl.value = cfg.cats[0] || "其他";
+    if(quickCatEl.value === "") quickCatEl.value = "all";
+    if(catFilterEl.value === "") catFilterEl.value = "all";
+  }
+
+  function fillMonths(){
+    const months = Array.from(new Set(data.map(x=>ym(x.date)))).sort().reverse();
+    const cur = ym(todayISO());
+    if(months.length === 0) months.push(cur);
+    if(!months.includes(cur)) months.unshift(cur);
+
+    monthFilterEl.innerHTML = "";
+    const allOpt = document.createElement("option");
+    allOpt.value = "all"; allOpt.textContent = "全部月份";
+    monthFilterEl.appendChild(allOpt);
+    months.forEach(m=>{
+      const o = document.createElement("option");
+      o.value = m; o.textContent = m;
+      monthFilterEl.appendChild(o);
+    });
+    if(!monthFilterEl.value) monthFilterEl.value = cur; // 默认本月
+  }
+
+  // ---------- Helpers ----------
+  const money = n => {
+    const v = Number(n || 0);
+    return (Math.round(v*100)/100).toFixed(2);
+  };
+  function parseAmount(str){
+    if(str == null) return null;
+    const s = String(str).replace(/[^\d.]/g,"").trim();
+    if(!s) return null;
+    const v = Number(s);
+    if(!Number.isFinite(v) || v <= 0) return null;
+    return Math.round(v*100)/100;
+  }
+  function uid(){
+    return Math.random().toString(16).slice(2) + Date.now().toString(16);
+  }
+
+  // ---------- Quick buttons ----------
+  function renderQuick(){
+    quickBar.innerHTML = "";
+    cfg.quick.forEach((q, idx)=>{
+      const pill = document.createElement("div");
+      pill.className = "pill";
+      pill.textContent = q.text + (q.cat ? ` · ${q.cat}` : "");
+      pill.title = "点一下插入备注；长按/右键删除";
+      pill.onclick = () => {
+        if(cfg.deleteMode){
+          cfg.quick.splice(idx,1);
+          saveCfg(cfg);
+          renderQuick();
+          showToast("已删除快捷");
+          return;
+        }
+        // insert/append note
+        const cur = noteEl.value.trim();
+        noteEl.value = cur ? (cur + " / " + q.text) : q.text;
+        noteEl.focus();
+        if(q.cat && q.cat !== "all"){
+          catEl.value = q.cat;
+        }
+      };
+      // desktop right click / long press
+      pill.oncontextmenu = (e) => {
+        e.preventDefault();
+        cfg.quick.splice(idx,1);
+        saveCfg(cfg);
+        renderQuick();
+        showToast("已删除快捷");
+      };
+      let pressTimer = null;
+      pill.ontouchstart = () => {
+        pressTimer = setTimeout(()=>{
+          cfg.quick.splice(idx,1);
+          saveCfg(cfg);
+          renderQuick();
+          showToast("已删除快捷");
+        }, 650);
+      };
+      pill.ontouchend = () => clearTimeout(pressTimer);
+      quickBar.appendChild(pill);
+    });
+    if(cfg.quick.length === 0){
+      const tip = document.createElement("div");
+      tip.className="hint";
+      tip.textContent="还没有快捷按钮，先添加几个常用的。";
+      quickBar.appendChild(tip);
+    }
+  }
+
+  function addQuick(){
+    const text = quickTextEl.value.trim();
+    const cat = quickCatEl.value;
+    if(!text){ showToast("先写快捷文案"); return; }
+    // dedupe
+    if(cfg.quick.some(x=>x.text===text)){ showToast("这个快捷已存在"); return; }
+    cfg.quick.unshift({text, cat: cat==="all" ? "" : cat});
+    quickTextEl.value="";
+    saveCfg(cfg);
+    renderQuick();
+    showToast("已添加快捷");
+  }
+
+  function resetQuick(){
+    cfg.quick = defaultQuick.slice();
+    saveCfg(cfg);
+    renderQuick();
+    showToast("已重置快捷");
+  }
+
+  // ---------- Lexicon ----------
+  function bumpLexFromNote(note){
+    if(!note) return;
+    // Split by common separators, keep short phrases
+    const parts = note
+      .split(/[\s/、,，;；|]+/g)
+      .map(s=>s.trim())
+      .filter(Boolean);
+
+    parts.forEach(p=>{
+      // normalize
+      const w = p.slice(0,20);
+      if(!w) return;
+      cfg.lex[w] = (cfg.lex[w]||0) + 1;
+    });
+    saveCfg(cfg);
+  }
+
+  function topLex(n=12){
+    return Object.entries(cfg.lex)
+      .sort((a,b)=>b[1]-a[1])
+      .slice(0,n)
+      .map(([w,c])=>({w,c}));
+  }
+
+  function autoCategoryFromNote(note){
+    const s = (note||"").toLowerCase();
+    // very simple keyword mapping; you can extend later
+    const rules = [
+      {k:["奶茶","咖啡","外卖","火锅","烧烤","早餐","午餐","晚餐","吃","饭"], cat:"餐饮"},
+      {k:["打车","滴滴","地铁","公交","车费","油费","停车"], cat:"交通"},
+      {k:["快递","纸","洗发","沐浴","牙膏","日用"], cat:"日用"},
+      {k:["买书","书费","课程","网课","报名","考试"], cat:"学习"},
+      {k:["药","医院","挂号","体检"], cat:"医疗"},
+      {k:["电影","游戏","演唱会","KTV"], cat:"娱乐"},
+      {k:["房租","水电","电费","水费","燃气"], cat:"房租/水电"},
+    ];
+    for(const r of rules){
+      if(r.k.some(x=>s.includes(String(x).toLowerCase()))){
+        return r.cat;
+      }
+    }
+    return null;
+  }
+
+  function renderLex(){
+    lexBar.innerHTML = "";
+    const list = topLex(12);
+    list.forEach(({w,c})=>{
+      const pill = document.createElement("div");
+      pill.className="pill";
+      pill.textContent = `${w} · ${c}`;
+      pill.title = "点一下插入/追加到备注";
+      pill.onclick = () => {
+        const cur = noteEl.value.trim();
+        noteEl.value = cur ? (cur + " / " + w) : w;
+        noteEl.focus();
+      };
+      lexBar.appendChild(pill);
+    });
+
+    const tip = document.createElement("div");
+    tip.className="hint";
+    tip.innerHTML = `Top 词：按备注统计（越记越准）。`;
+    lexBar.appendChild(tip);
+  }
+
+  function resetLex(){
+    cfg.lex = {};
+    defaultLexSeed.forEach(w => cfg.lex[w] = (cfg.lex[w]||0)+1);
+    saveCfg(cfg);
+    renderLex();
+    showToast("已重置词库");
+  }
+
+  // ---------- Add record ----------
+  function clearInput(){
+    amountEl.value="";
+    noteEl.value="";
+    catEl.value = cfg.cats[0] || "其他";
+    typeEl.value = "out";
+    dateEl.value = todayISO();
+  }
+
+  function addRecord(){
+    const date = dateEl.value || todayISO();
+    const type = typeEl.value;
+    const amount = parseAmount(amountEl.value);
+    if(!amount){ showToast("金额没填对"); return; }
+
+    let cat = catEl.value || "其他";
+    let note = noteEl.value.trim();
+
+    // auto category (only when note exists & user didn't manually change? We'll keep simple)
+    if(note){
+      const ac = autoCategoryFromNote(note);
+      if(ac && cfg.cats.includes(ac)){
+        cat = ac;
+        catEl.value = ac;
+      }
+    }
+
+    const item = {
+      id: uid(),
+      date,
+      type,
+      cat,
+      amount,
+      note,
+      ts: Date.now()
+    };
+    data.unshift(item);
+    saveData(data);
+
+    // learn lexicon from note
+    bumpLexFromNote(note);
+
+    // update UI
+    fillMonths();
+    render();
+    renderLex();
+    showToast("已记录");
+    amountEl.value="";
+    noteEl.value="";
+    amountEl.focus();
+  }
+
+  // ---------- Filters & render ----------
+  function getFiltered(){
+    const m = monthFilterEl.value;
+    const tf = typeFilterEl.value;
+    const cf = catFilterEl.value;
+    const kw = (kwEl.value||"").trim().toLowerCase();
+
+    return data.filter(x=>{
+      if(m !== "all" && ym(x.date) !== m) return false;
+      if(tf !== "all" && x.type !== tf) return false;
+      if(cf !== "all" && x.cat !== cf) return false;
+      if(kw){
+        const bag = `${x.note||""} ${x.cat||""}`.toLowerCase();
+        if(!bag.includes(kw)) return false;
+      }
+      return true;
+    });
+  }
+
+  function computeMonthKpis(month){
+    const list = data.filter(x=>ym(x.date)===month);
+    const inc = list.filter(x=>x.type==="in").reduce((s,x)=>s+x.amount,0);
+    const out = list.filter(x=>x.type==="out").reduce((s,x)=>s+x.amount,0);
+    return {inc,out,net:inc-out};
+  }
+
+  function render(){
+    const list = getFiltered();
+    countText.textContent = list.length;
+
+    tbody.innerHTML = "";
+    list.forEach(x=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${x.date}</td>
+        <td><span class="typeTag ${x.type==="in"?"in":"out"}">${x.type==="in"?"收入":"支出"}</span></td>
+        <td>${x.cat || "-"}</td>
+        <td class="right ${x.type==="in"?"in":"out"}">${x.type==="in"?"+":"-"}${money(x.amount)}</td>
+        <td class="muted">${escapeHtml(x.note || "")}</td>
+        <td>
+          <button class="btn smallbtn danger" data-del="${x.id}">删除</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // bind delete
+    tbody.querySelectorAll("[data-del]").forEach(btn=>{
+      btn.onclick = () => {
+        const id = btn.getAttribute("data-del");
+        data = data.filter(x=>x.id !== id);
+        saveData(data);
+        fillMonths();
+        render();
+        showToast("已删除");
+      };
+    });
+
+    // kpi is for selected month if monthFilter is a month else current month
+    const curMonth = ym(todayISO());
+    const kMonth = (monthFilterEl.value && monthFilterEl.value !== "all") ? monthFilterEl.value : curMonth;
+    const {inc,out,net} = computeMonthKpis(kMonth);
+    kpiIn.textContent = money(inc);
+    kpiOut.textContent = money(out);
+    kpiNet.textContent = money(net);
+    kpiNet.className = "v" + (net>=0 ? " in" : " out");
+  }
+
+  function escapeHtml(s){
+    return String(s)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  // ---------- CSV / JSON ----------
+  function downloadBlob(blob, filename){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportCSV(){
+    const list = getFiltered();
+    const head = ["date","type","category","amount","note"];
+    const rows = list.map(x=>[
+      x.date,
+      x.type==="in"?"income":"expense",
+      x.cat||"",
+      money(x.amount),
+      (x.note||"").replaceAll('"','""')
+    ]);
+    const csv = [head.join(","), ...rows.map(r=>`${r[0]},${r[1]},${r[2]},${r[3]},"${r[4]}"`)].join("\n");
+    downloadBlob(new Blob([csv],{type:"text/csv;charset=utf-8"}), `ledger_${Date.now()}.csv`);
+    showToast("已导出 CSV");
+  }
+
+  function backupJSON(){
+    const payload = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      data,
+      cfg
+    };
+    downloadBlob(new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}), `ledger_backup_${Date.now()}.json`);
+    showToast("已备份 JSON");
+  }
+
+  function importJSON(file){
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const obj = JSON.parse(reader.result);
+        if(obj && obj.data && Array.isArray(obj.data)){
+          data = obj.data;
+          saveData(data);
+        }
+        if(obj && obj.cfg){
+          cfg = obj.cfg;
+          // ensure fields exist
+          if(!cfg.cats) cfg.cats = defaultCats.slice();
+          if(!cfg.quick) cfg.quick = defaultQuick.slice();
+          if(!cfg.lex) cfg.lex = {};
+          if(!cfg.theme) cfg.theme = "auto";
+          if(typeof cfg.deleteMode !== "boolean") cfg.deleteMode = false;
+          saveCfg(cfg);
+        }
+        initUI();
+        showToast("已导入完成");
+      }catch(e){
+        showToast("导入失败：JSON 不对");
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // ---------- Delete mode ----------
+  function syncDeleteModeBtn(){
+    toggleDeleteBtn.textContent = `🗑️ 删除模式：${cfg.deleteMode ? "开启" : "关闭"}`;
+    toggleDeleteBtn.className = "btn smallbtn " + (cfg.deleteMode ? "danger" : "");
+  }
+
+  function toggleDeleteMode(){
+    cfg.deleteMode = !cfg.deleteMode;
+    saveCfg(cfg);
+    syncDeleteModeBtn();
+    showToast(cfg.deleteMode ? "删除模式已开启" : "删除模式已关闭");
+  }
+
+  // ---------- PWA install (in-page) ----------
+  let deferredPrompt = null;
+  window.addEventListener("beforeinstallprompt", (e)=>{
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = "inline-flex";
+  });
+  installBtn.addEventListener("click", async ()=>{
+    if(!deferredPrompt){ showToast("请用 Safari 分享→添加到主屏幕"); return; }
+    deferredPrompt.prompt();
+    deferredPrompt = null;
+    installBtn.style.display = "none";
+  });
+
+  // ---------- Service worker (offline) ----------
+  // We'll create a SW from a Blob so this single file can be fully offline.
+  async function registerSW(){
+    if(!("serviceWorker" in navigator)) return;
+    const swCode = `
+      const CACHE = "ledger-pro-cache-v1";
+      self.addEventListener("install", (e) => {
+        e.waitUntil(
+          caches.open(CACHE).then(c => c.addAll(["./"]))
+        );
+        self.skipWaiting();
+      });
+      self.addEventListener("activate", (e) => {
+        e.waitUntil(self.clients.claim());
+      });
+      self.addEventListener("fetch", (e) => {
+        e.respondWith(
+          caches.match(e.request).then(res => res || fetch(e.request).then(net => {
+            const copy = net.clone();
+            caches.open(CACHE).then(c => c.put(e.request, copy)).catch(()=>{});
+            return net;
+          }).catch(()=>res))
+        );
+      });
+    `;
+    const blob = new Blob([swCode], {type:"text/javascript"});
+    const swUrl = URL.createObjectURL(blob);
+    try{
+      await navigator.serviceWorker.register(swUrl, {scope:"./"});
+    }catch(e){
+      // ignore
+    }
+  }
+
+  // ---------- Events ----------
+  addBtn.addEventListener("click", addRecord);
+  clearInputBtn.addEventListener("click", ()=>{ clearInput(); showToast("已清空输入"); });
+  addQuickBtn.addEventListener("click", addQuick);
+  resetQuickBtn.addEventListener("click", resetQuick);
+  resetLexBtn.addEventListener("click", resetLex);
+
+  monthFilterEl.addEventListener("change", render);
+  typeFilterEl.addEventListener("change", render);
+  catFilterEl.addEventListener("change", render);
+  kwEl.addEventListener("input", ()=>{ render(); });
+
+  clearFilterBtn.addEventListener("click", ()=>{
+    monthFilterEl.value = ym(todayISO());
+    typeFilterEl.value = "all";
+    catFilterEl.value = "all";
+    kwEl.value = "";
+    render();
+    showToast("已清空筛选");
+  });
+
+  exportCsvBtn.addEventListener("click", exportCSV);
+  backupJsonBtn.addEventListener("click", backupJSON);
+  importFile.addEventListener("change", (e)=>{
+    const f = e.target.files && e.target.files[0];
+    if(f) importJSON(f);
+    importFile.value = "";
+  });
+
+  wipeBtn.addEventListener("click", ()=>{
+    const ok = confirm("确定要清空所有数据吗？此操作不可恢复（除非你有 JSON 备份）。");
+    if(!ok) return;
+    data = [];
+    saveData(data);
+    showToast("已清空所有数据");
+    fillMonths();
+    render();
+  });
+
+  toggleDeleteBtn.addEventListener("click", toggleDeleteMode);
+  themeBtn.addEventListener("click", cycleTheme);
+  scrollTop.addEventListener("click", ()=>window.scrollTo({top:0,behavior:"smooth"}));
+
+  // handy: enter to add
+  amountEl.addEventListener("keydown",(e)=>{ if(e.key==="Enter") addRecord(); });
+  noteEl.addEventListener("keydown",(e)=>{ if(e.key==="Enter") addRecord(); });
+
+  // Auto-fill date to today
+  function initUI(){
+    // date default
+    if(!dateEl.value) dateEl.value = todayISO();
+
+    fillCats();
+    fillMonths();
+    renderQuick();
+    renderLex();
+    syncDeleteModeBtn();
+    applyTheme();
+    render();
+
+    // keep quickCat include "不改变" option
+    if(!quickCatEl.querySelector('option[value="all"]')){
+      const o = document.createElement("option");
+      o.value="all"; o.textContent="不改变";
+      quickCatEl.prepend(o);
+    }
+    if(!quickCatEl.value) quickCatEl.value="all";
+  }
+
+  initUI();
+  registerSW();
+
+})();
+</script>
+</body>
+</html>
+
